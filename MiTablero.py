@@ -1,47 +1,46 @@
 import streamlit as st
 from streamlit_drawable_canvas import st_canvas
-from deep_translator import GoogleTranslator
+from PIL import Image
+from io import BytesIO
 
-st.title("Tablero para dibujo + Traductor")
+st.title("🎨 Tablero + Contador de letras")
 
 with st.sidebar:
-    st.subheader("Propiedades del Tablero")
+    st.subheader("🧠 Entrada de texto")
 
-    # 🔹 NUEVA SECCIÓN: Traductor
-    st.subheader("Traductor Español → Inglés")
-    palabra = st.text_input("Escribe una palabra en español:")
+    texto = st.text_input("Escribe una palabra o frase:")
 
-    traduccion = ""
-    if palabra:
-        traduccion = GoogleTranslator(source='es', target='en').translate(palabra)
-        st.success(f"Inglés: {traduccion}")
+    letras = 0
+    palabras = 0
 
-    # Canvas dimensions
-    st.subheader("Dimensiones del Tablero")
-    canvas_width = st.slider("Ancho del tablero", 300, 700, 500, 50)
-    canvas_height = st.slider("Alto del tablero", 200, 600, 300, 50)
+    if texto:
+        # 🔹 Contador
+        letras = len(texto.replace(" ", ""))
+        palabras = len(texto.split())
 
-    # Drawing mode selector
+        st.write(f"🔤 Letras (sin espacios): {letras}")
+        st.write(f"📝 Palabras: {palabras}")
+
+    st.subheader("🎛️ Configuración del tablero")
+
+    canvas_width = st.slider("Ancho", 300, 700, 500, 50)
+    canvas_height = st.slider("Alto", 200, 600, 300, 50)
+
     drawing_mode = st.selectbox(
-        "Herramienta de Dibujo:",
+        "Herramienta:",
         ("freedraw", "line", "rect", "circle", "transform", "polygon", "point"),
     )
 
-    # Stroke width slider
-    stroke_width = st.slider("Selecciona el ancho de línea", 1, 30, 15)
-
-    # Stroke color picker
+    stroke_width = st.slider("Grosor de línea", 1, 30, 15)
     stroke_color = st.color_picker("Color de trazo", "#FFFFFF")
-
-    # Background color
     bg_color = st.color_picker("Color de fondo", "#000000")
 
 
-# 🔹 Mensaje en pantalla principal
-if palabra:
-    st.info(f"Dibuja esto: {traduccion}")
+# 🔹 Mostrar instrucción
+if texto:
+    st.info(f"✏️ Dibuja esto: '{texto}' (Tiene {letras} letras)")
 
-# Canvas
+# 🎨 Canvas
 canvas_result = st_canvas(
     fill_color="rgba(255, 165, 0, 0.3)",
     stroke_width=stroke_width,
@@ -53,7 +52,20 @@ canvas_result = st_canvas(
     key=f"canvas_{canvas_width}_{canvas_height}",
 )
 
-# 🔹 Extra: validar que sí dibujó algo
+# 🔹 Validar si dibujó algo
 if canvas_result.json_data is not None:
     if len(canvas_result.json_data["objects"]) > 0:
         st.success("¡Dibujo realizado! 👍")
+
+# 🔹 Descargar dibujo
+if canvas_result.image_data is not None:
+    img = Image.fromarray(canvas_result.image_data.astype('uint8'))
+    buf = BytesIO()
+    img.save(buf, format="PNG")
+
+    st.download_button(
+        label="📥 Descargar dibujo",
+        data=buf.getvalue(),
+        file_name="mi_dibujo.png",
+        mime="image/png"
+    )
